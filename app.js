@@ -4,6 +4,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const Candidate = require("./models/candidate");
 const morgan = require("morgan");
+const async = require("async");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
@@ -26,22 +27,27 @@ app.use(morgan("dev"));
 app.use(cors({ credentials: true, origin: "http://localhost:3000" }));
 
 app.post("/", async (req, res) => {
-  await Candidate.deleteMany({});
+  // await Candidate.deleteMany({});
   let array = req.body.array;
-  // console.log(array);
-  array.map(async (a) => {
-    const candidate = new Candidate({
-      name: a["Name of the Candidate"],
-      email: a.Email,
-      phone: a["Mobile No."],
-      experience: a["Work Experience"],
-      resume: a["Resume Title"],
-      location: a["Current Location"],
-      address: a["Postal Address"],
-      employer: a["current Employer"],
-      designation: a["Current Designation"],
-    });
-    candidate.save();
+  async.eachSeries(array, async (a) => {
+    const duplicate = await Candidate.findOne({ email: a.Email.trim() });
+    if (duplicate) {
+      console.log("duplicate");
+      console.log(a.Email);
+    } else {
+      const candidate = new Candidate({
+        name: a["Name of the Candidate"],
+        email: a.Email,
+        phone: a["Mobile No."],
+        experience: a["Work Experience"],
+        resume: a["Resume Title"],
+        location: a["Current Location"],
+        address: a["Postal Address"],
+        employer: a["current Employer"],
+        designation: a["Current Designation"],
+      });
+      await candidate.save();
+    }
   });
 });
 
